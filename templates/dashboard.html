@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Sistema de Estudos{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Minhas Tarefas</h1>
+
+    <p>Sessão iniciada como: <strong>{{ user.nome }}</strong> ({{ user.curso }} - {{ user.periodo }})</p>
+
+    <div id="button-tarefa">
+        <a href="{{ url_for('adicionar_tarefa') }}">
+            <button type="button">Nova Tarefa</button>
+        </a>
+
+        <form action="{{ url_for('dashboard') }}" method="get" class="form-busca">
+            <input type="text" name="pesquisa" placeholder="Pesquisar tarefas...">
+            <button type="submit">Buscar</button>
+        </form>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Listagem de tarefas será implementada aqui -->
+</div>
+{% endblock %}

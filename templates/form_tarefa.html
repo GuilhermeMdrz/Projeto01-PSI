@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Adicionar Tarefa - Sistema de Estudos{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>Adicionar Tarefa</h2>
+
+    <form method="POST" action="{{ url_for('adicionar_tarefa') }}">
+        <label for="titulo">Título da Tarefa:</label>
+        <input type="text" id="titulo" name="titulo" required>
+
+        <label for="descricao">Descrição:</label>
+        <textarea id="descricao" name="descricao" required></textarea>
+
+        <label for="disciplina">Disciplina:</label>
+        <select id="disciplina" name="disciplina" required>
+            {% if curso == "informatica" %}
+                {% if periodo == "1ano" %}
+                    <option value="algoritmos">Algoritmos e Lógica de Programação</option>
+                    <option value="matematica">Matemática Discreta</option>
+                {% elif periodo == "2ano" %}
+                    <option value="programacao">Programação Orientada a Objetos</option>
+                    <option value="banco_de_dados">Banco de Dados</option>
+                {% elif periodo == "3ano" %}
+                    <option value="redes">Redes de Computadores</option>
+                    <option value="sistemas_operacionais">Sistemas Operacionais</option>
+                {% elif periodo == "4ano" %}
+                    <option value="desenvolvimento_web">Desenvolvimento Web</option>
+                    <option value="seguranca_da_informacao">Segurança da Informação</option>
+                {% endif %}
+
+            {% elif curso == "vestuario" %}
+                {% if periodo == "1ano" %}
+                    <option value="desenho_tecnico">Desenho Técnico</option>
+                    <option value="materiais">Materiais para Vestuário</option>
+                {% elif periodo == "2ano" %}
+                    <option value="modelagem">Modelagem de Roupas</option>
+                    <option value="confeccao">Técnicas de Confecção</option>
+                {% elif periodo == "3ano" %}
+                    <option value="estilismo">Estilismo e Moda</option>
+                    <option value="historia_da_arte">História da Arte</option>
+                {% elif periodo == "4ano" %}
+                    <option value="projeto_final">Projeto Final de Vestuário</option>
+                    <option value="empreendedorismo">Empreendedorismo na Moda</option>
+                {% endif %}
+
+            {% elif curso == "textil" %}
+                {% if periodo == "1ano" %}
+                    <option value="introducao_textil">Introdução à Tecnologia Têxtil</option>
+                    <option value="materiais_textil">Materiais Têxteis</option>
+                {% elif periodo == "2ano" %}
+                    <option value="processos_fabricacao">Processos de Fabricação Têxtil</option>
+                    <option value="controle_qualidade">Controle de Qualidade Têxtil</option>
+                {% elif periodo == "3ano" %}
+                    <option value="sustentabilidade">Sustentabilidade na Indústria Têxtil</option>
+                    <option value="inovacao_textil">Inovação e Tecnologia Têxtil</option>
+                {% elif periodo == "4ano" %}
+                    <option value="projeto_final_textil">Projeto Final de Tecnologia Têxtil</option>
+                    <option value="gestao_producao">Gestão da Produção Têxtil</option>
+                {% endif %}
+
+            {% elif curso == "eletrotecnica" %}
+                {% if periodo == "1ano" %}
+                    <option value="circuitos_eletricos">Circuitos Elétricos</option>
+                    <option value="eletronica_basica">Eletrônica Básica</option>
+                {% elif periodo == "2ano" %}
+                    <option value="maquinas_eletricas">Máquinas Elétricas</option>
+                    <option value="sistemas_de_controle">Sistemas de Controle</option>
+                {% elif periodo == "3ano" %}
+                    <option value="energia_renovavel">Energia Renovável</option>
+                    <option value="automacao_industrial">Automação Industrial</option>
+                {% elif periodo == "4ano" %}
+                    <option value="projeto_final_eletrotecnica">Projeto Final de Eletrotécnica</option>
+                    <option value="gestao_energia">Gestão de Energia</option>
+                {% endif %}
+            {% endif %}
+        </select>
+
+        <label for="data_entrega">Data de Entrega:</label>
+        <input type="date" id="data_entrega" name="data_entrega" required>
+
+        <button type="submit">Adicionar Tarefa</button>
+        <button type="reset">Cancelar</button>
+    </form>
+</div>
+{% endblock %}
