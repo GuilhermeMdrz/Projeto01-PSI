@@ -1,102 +1,122 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, session
+import json
 
 app = Flask(__name__)
+app.secret_key = 'chave_secreta'
+tarefas = []
 
-"""
-Falta implementar:
-Um sistema de permanência de dados.
-Pesquisa de tarefas.
-Exibição de tarefas criadas, além de edição e exclusão de tarefas.
-Validar os dados do formulário de registro e login.
-Permitir o login somente se o usuário tiver se registrado previamente.
+def carregar_tarefas():
+    global tarefas
+
+    try:
+        with open('tarefas.json', 'r', encoding='utf-8') as arquivo:
+            tarefas = json.load(arquivo)
+
+    except FileNotFoundError:
+        tarefas = []
+def salvar_tarefas():
+    with open('tarefas.json', 'w', encoding='utf-8') as arquivo:
+        json.dump(
+            tarefas,
+            arquivo,
+            ensure_ascii=False,
+            indent=4
+        )
+
+""" 
+Falta implementar: 
+Validar os dados do formulário de registro e login. 
+Permitir o login somente se o usuário tiver se registrado previamente. 
 Polir o código.
 """
-
-user = None
-tarefas = []
 
 
 @app.route('/')
 def index():
-    if user:
+    if session.get('user'):
         return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
 
-
 @app.route('/registro', methods=['GET', 'POST'])
 def registro():
-    global user
 
-    if user:
+    if session.get('user'):
         return redirect(url_for('dashboard'))
 
     if request.method == 'POST':
-        # Processar dados do formulário
+
         username = request.form.get('username')
         email = request.form.get('email')
         password = request.form.get('password')
         curso = request.form.get('curso')
         periodo = request.form.get('periodo')
 
-        # Salva os dados no user
-        user = {
-            'nome': username,
-            'email': email,
-            'curso': curso,
-            'periodo': periodo
-        }
+        session['user'] = {'nome': username,'email': email,'curso': curso,'periodo': periodo}
+
         return redirect(url_for('dashboard'))
 
-    return render_template('registro.html', user=user)
-
+    return render_template('registro.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    global user
 
-    if user:
+    if session.get('user'):
         return redirect(url_for('dashboard'))
 
     if request.method == 'POST':
+
         username = request.form.get('username')
         password = request.form.get('password')
 
-        # Salvar dados do usuário
-        user = {
-            'nome': username,
-            'email': username,
-            'curso': 'Informática para Internet',
-            'periodo': '1º Ano'
-        }
+        session['user'] = {'nome': username,'email': username,'curso': 'informatica','periodo': '1ano'}
+
         return redirect(url_for('dashboard'))
 
-    return render_template('login.html', user=user)
-
+    return render_template('login.html')
 
 @app.route('/logout', methods=['POST'])
 def logout():
-    global user
-    user = None
-    return redirect(url_for('index'))
 
+    session.pop('user', None)
+
+    return redirect(url_for('login'))
 
 @app.route('/dashboard')
 def dashboard():
-    if not user:
+
+    if not session.get('user'):
         return redirect(url_for('login'))
 
-    # Implementar pesquisa de tarefas e exibição de tarefas criadas
-    return render_template('dashboard.html', user=user, tarefas=[], pesquisa='')
+    pesquisa = request.args.get('pesquisa')
 
+    tarefas_filtradas = tarefas
+
+    if pesquisa:
+        tarefas_filtradas = []
+
+        for tarefa in tarefas:
+
+            if (
+                pesquisa.lower() in tarefa['titulo'].lower()
+                or
+                pesquisa.lower() in tarefa['disciplina'].lower()
+            ):
+                tarefas_filtradas.append(tarefa)
+
+    return render_template(
+        'dashboard.html',
+        user=session.get('user'),
+        tarefas=tarefas_filtradas,
+        pesquisa=pesquisa)
 
 @app.route('/adicionar_tarefa', methods=['GET', 'POST'])
 def adicionar_tarefa():
-    global tarefas
 
-    if not user:
+    if not session.get('user'):
         return redirect(url_for('login'))
-    
+
     if request.method == 'POST':
+
         titulo = request.form.get('titulo')
         descricao = request.form.get('descricao')
         disciplina = request.form.get('disciplina')
@@ -108,10 +128,42 @@ def adicionar_tarefa():
             'disciplina': disciplina,
             'data_entrega': data_entrega
         })
+        salvar_tarefas()
         return redirect(url_for('dashboard'))
 
-    return render_template('form_tarefa.html', user=user, curso=user.get('curso'), periodo=user.get('periodo'))
+    return render_template('form_tarefa.html', user=session.get('user'), curso=session.get('user').get('curso'),periodo=session.get('user').get('periodo'))
 
+@app.route('/excluir/<int:id>')
+def excluir(id):
 
+    if id < len(tarefas):
+        tarefas.pop(id)
+        salvar_tarefas()
+
+    return redirect(url_for('dashboard'))
+@app.route('/editar/<int:id>', methods=['GET', 'POST'])
+def editar(id):
+
+    if request.method == 'POST':
+
+        tarefas[id]['titulo'] = request.form.get('titulo')
+        tarefas[id]['descricao'] = request.form.get('descricao')
+        tarefas[id]['disciplina'] = request.form.get('disciplina')
+        tarefas[id]['data_entrega'] = request.form.get('data_entrega')
+
+        salvar_tarefas()
+
+        return redirect(url_for('dashboard'))
+
+    tarefa = tarefas[id]
+
+    return render_template(
+        'form_tarefa.html',
+        tarefa=tarefa,
+        id=id,
+        curso=session.get('user').get('curso'),
+        periodo=session.get('user').get('periodo')
+    )
 if __name__ == '__main__':
+    carregar_tarefas()
     app.run(debug=True)

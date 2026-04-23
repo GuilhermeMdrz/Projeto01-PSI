@@ -3,24 +3,72 @@
 {% block title %}Dashboard - Sistema de Estudos{% endblock %}
 
 {% block content %}
+
 <div class="container">
     <h1>Minhas Tarefas</h1>
+<p>
+    Sessão iniciada como:<strong>{{ user.nome }}</strong> ({{ user.curso }} - {{ user.periodo }})
+</p>
+<div id="button-tarefa">
+    <a href="{{ url_for('adicionar_tarefa') }}">
+        <button type="button">Nova Tarefa</button>
+    </a>
+    <form action="{{ url_for('dashboard') }}" method="get" class="form-busca">
+        <input
+            type="text"
+            name="pesquisa"
+            placeholder="Pesquisar tarefas..."
+            value="{{ pesquisa }}"
+        >
+        <button type="submit">Buscar</button>
+    </form>
 
-    <p>Sessão iniciada como: <strong>{{ user.nome }}</strong> ({{ user.curso }} - {{ user.periodo }})</p>
-
-    <div id="button-tarefa">
-        <a href="{{ url_for('adicionar_tarefa') }}">
-            <button type="button">Nova Tarefa</button>
-        </a>
-
-        <form action="{{ url_for('dashboard') }}" method="get" class="form-busca">
-            <input type="text" name="pesquisa" placeholder="Pesquisar tarefas...">
-            <button type="submit">Buscar</button>
-        </form>
-    </div>
+</div>
 </div>
 
 <div class="container">
-    <!-- Listagem de tarefas será implementada aqui -->
+{% if tarefas %}
+    <table border="1" cellpadding="10">
+        <thead>
+            <tr>
+                <th>Título</th>
+                <th>Descrição</th>
+                <th>Disciplina</th>
+                <th>Data de Entrega</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for tarefa in tarefas %}
+            <tr>
+                <td>{{ tarefa.titulo }}</td>
+                <td>{{ tarefa.descricao }}</td>
+                <td>{{ tarefa.disciplina }}</td>
+                <td>{{ tarefa.data_entrega }}</td>
+                <td>
+                    <a href="{{ url_for('editar', id=loop.index0) }}">
+                        <button type="button">
+                            Editar
+                        </button>
+                    </a>
+                    <a href="{{ url_for('excluir', id=loop.index0) }}">
+                        <button type="button">
+                            Excluir
+                        </button>
+                    </a></td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+{% else %}
+
+    <p>Nenhuma tarefa cadastrada.</p>
+
+{% endif %}
 </div>
+<form action="{{ url_for('logout') }}" method="POST">
+    <button type="submit">Logout</button>
+</form>
+
 {% endblock %}
