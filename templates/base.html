@@ -30,8 +30,16 @@
     </header>
 
     <main>
-        {% block content %}
-        {% endblock %}
+         {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for msg in messages %}
+                <p>{{ msg }}</p>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    {% block content %}
+    {% endblock %}
     </main>
 
     <footer>

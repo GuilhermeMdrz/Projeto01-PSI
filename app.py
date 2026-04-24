@@ -1,35 +1,18 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, flash
 import json
 
 app = Flask(__name__)
 app.secret_key = 'chave_secreta'
 tarefas = []
-
-def carregar_tarefas():
-    global tarefas
-
-    try:
-        with open('tarefas.json', 'r', encoding='utf-8') as arquivo:
-            tarefas = json.load(arquivo)
-
-    except FileNotFoundError:
-        tarefas = []
-def salvar_tarefas():
-    with open('tarefas.json', 'w', encoding='utf-8') as arquivo:
-        json.dump(
-            tarefas,
-            arquivo,
-            ensure_ascii=False,
-            indent=4
-        )
+usuarios = []
 
 """ 
 Falta implementar: 
 Validar os dados do formulário de registro e login. 
 Permitir o login somente se o usuário tiver se registrado previamente. 
 Polir o código.
+Vejam se há algo pendente ainda(jamily)
 """
-
 
 @app.route('/')
 def index():
@@ -44,17 +27,31 @@ def registro():
         return redirect(url_for('dashboard'))
 
     if request.method == 'POST':
-
         username = request.form.get('username')
         email = request.form.get('email')
         password = request.form.get('password')
         curso = request.form.get('curso')
         periodo = request.form.get('periodo')
+        
+        if not username or not email or not password:
+            flash('Preencha todos os campos!')
+            return redirect(url_for('registro'))
 
-        session['user'] = {'nome': username,'email': email,'curso': curso,'periodo': periodo}
+        for user in usuarios:
+            if user['email'] == email:
+                flash('Esse email já foi registrado!')
+                return redirect(url_for('registro'))
 
-        return redirect(url_for('dashboard'))
+        usuarios.append({
+            'nome': username,
+            'email': email,
+            'password': password,
+            'curso': curso,
+            'periodo': periodo
+        })
 
+        flash('Registro foi realizado com sucesso!')
+        return redirect(url_for('login'))
     return render_template('registro.html')
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -64,21 +61,24 @@ def login():
         return redirect(url_for('dashboard'))
 
     if request.method == 'POST':
-
         username = request.form.get('username')
         password = request.form.get('password')
 
-        session['user'] = {'nome': username,'email': username,'curso': 'informatica','periodo': '1ano'}
+        for user in usuarios:  
+            if user['email'] == username and user['password'] == password:
+                session['user'] = user
+                flash('Seu login foi realizado com sucesso!')
+                return redirect(url_for('dashboard'))
 
-        return redirect(url_for('dashboard'))
-
+        flash('Email ou senha incorretos!')
+        return redirect(url_for('login'))
     return render_template('login.html')
 
 @app.route('/logout', methods=['POST'])
 def logout():
 
     session.pop('user', None)
-
+    flash('Você saiu do sistema!')
     return redirect(url_for('login'))
 
 @app.route('/dashboard')
@@ -87,13 +87,11 @@ def dashboard():
     if not session.get('user'):
         return redirect(url_for('login'))
 
-    pesquisa = request.args.get('pesquisa')
-
+    pesquisa = request.args.get('pesquisa', '')
     tarefas_filtradas = tarefas
 
     if pesquisa:
         tarefas_filtradas = []
-
         for tarefa in tarefas:
 
             if (
@@ -103,11 +101,7 @@ def dashboard():
             ):
                 tarefas_filtradas.append(tarefa)
 
-    return render_template(
-        'dashboard.html',
-        user=session.get('user'),
-        tarefas=tarefas_filtradas,
-        pesquisa=pesquisa)
+    return render_template('dashboard.html',user=session.get('user'),tarefas=tarefas_filtradas,pesquisa=pesquisa)
 
 @app.route('/adicionar_tarefa', methods=['GET', 'POST'])
 def adicionar_tarefa():
@@ -121,6 +115,10 @@ def adicionar_tarefa():
         descricao = request.form.get('descricao')
         disciplina = request.form.get('disciplina')
         data_entrega = request.form.get('data_entrega')
+        
+        if not titulo or not descricao:
+            flash('Preencha todos os campos da tarefa!')
+            return redirect(url_for('adicionar_tarefa'))
 
         tarefas.append({
             'titulo': titulo,
@@ -128,7 +126,7 @@ def adicionar_tarefa():
             'disciplina': disciplina,
             'data_entrega': data_entrega
         })
-        salvar_tarefas()
+        flash('Tarefa adicionada com sucesso!')
         return redirect(url_for('dashboard'))
 
     return render_template('form_tarefa.html', user=session.get('user'), curso=session.get('user').get('curso'),periodo=session.get('user').get('periodo'))
@@ -138,9 +136,11 @@ def excluir(id):
 
     if id < len(tarefas):
         tarefas.pop(id)
-        salvar_tarefas()
-
+        flash('Sua tarefa foi excluída com sucesso!')
+    else:
+        flash('A tarefa não foi encontrada!')
     return redirect(url_for('dashboard'))
+
 @app.route('/editar/<int:id>', methods=['GET', 'POST'])
 def editar(id):
 
@@ -151,8 +151,7 @@ def editar(id):
         tarefas[id]['disciplina'] = request.form.get('disciplina')
         tarefas[id]['data_entrega'] = request.form.get('data_entrega')
 
-        salvar_tarefas()
-
+        flash('Sua tarefa foi editada com sucesso!')
         return redirect(url_for('dashboard'))
 
     tarefa = tarefas[id]
@@ -164,6 +163,6 @@ def editar(id):
         curso=session.get('user').get('curso'),
         periodo=session.get('user').get('periodo')
     )
+    
 if __name__ == '__main__':
-    carregar_tarefas()
     app.run(debug=True)
