@@ -89,6 +89,7 @@ input {
 }
 
 .prazo {
+    font-weight: 600;
     color: red;
 }
 

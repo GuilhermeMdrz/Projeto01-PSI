@@ -44,6 +44,8 @@
 
                 <p class="prazo">Prazo: {{ tarefa.data_entrega }}</p>
 
+                <hr>
+
                 <div class="acoes">
                     <a href="{{ url_for('editar', id=loop.index0) }}">Editar</a>
                     <a href="{{ url_for('excluir', id=loop.index0) }}">Excluir</a>
