@@ -15,7 +15,7 @@
 </p>
 <div id="button-tarefa">
     <a href="{{ url_for('adicionar_tarefa') }}">
-        <button type="button">Nova Tarefa</button>
+        <button type="button" class="bt-nova-tarefa">Nova Tarefa</button>
     </a>
     <form action="{{ url_for('dashboard') }}" method="get" class="form-busca">
         <input
@@ -24,7 +24,7 @@
             placeholder="Pesquisar tarefas..."
             value="{{ pesquisa }}"
         >
-        <button type="submit">Buscar</button>
+        <button type="submit"  class="bt-tarefa" >Buscar</button>
     </form>
 
 </div>
@@ -61,8 +61,4 @@
 
 {% endif %}
 </div>
-<form action="{{ url_for('logout') }}" method="POST">
-    <button type="submit">Logout</button>
-</form>
-
 {% endblock %}

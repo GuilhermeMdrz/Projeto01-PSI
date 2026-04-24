@@ -6,6 +6,10 @@ main{
     display: flex;
     flex-direction: column;
     align-items: center;
+    background-color: rgb(255, 255, 255);
+    border: 1px solid rgb(214, 214, 214);
+    width: 700px;
+    margin-left: 30%;
 }
 
 strong{
@@ -37,4 +41,12 @@ input{
     text-align: left;
 }
 
-
+.bt-nova-tarefa{
+    background-color: rgb(19, 130, 59);
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    width: 100%;
+}

@@ -31,11 +31,13 @@ header {
     font-weight: bold;
     margin-top: 0;
     margin-bottom: 3px;
+    font-size: 32px;
 }
 
 #subtitulo {
     font-size: 12px;
     margin: 0;
+    font-size: 16px;
 }
 
 #logout-form {
@@ -53,13 +55,14 @@ header {
 
 main {
     padding: 20px;
+    text-align: center;
 }
 
 h1 {
     margin-bottom: 5px;
 }
 
-button {
+.bt-tarefa {
     background-color: rgb(19, 130, 59);
     color: white;
     border: none;
@@ -67,6 +70,7 @@ button {
     border-radius: 5px;
     cursor: pointer;
 }
+
 
 input {
     width: 100%;
