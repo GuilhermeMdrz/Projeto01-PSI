@@ -1,5 +1,4 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
-import json
 
 app = Flask(__name__)
 app.secret_key = 'chave_secreta'
@@ -7,10 +6,6 @@ tarefas = []
 usuarios = []
 
 """ 
-Falta implementar: 
-Validar os dados do formulário de registro e login. 
-Permitir o login somente se o usuário tiver se registrado previamente. 
-Polir o código.
 Vejam se há algo pendente ainda(jamily)
 """
 
@@ -88,17 +83,18 @@ def dashboard():
         return redirect(url_for('login'))
 
     pesquisa = request.args.get('pesquisa', '')
-    tarefas_filtradas = tarefas
+    tarefas_filtradas = []
+     
+    for tarefa in tarefas:
+        if tarefa['usuario'] == session['user']['email']:
 
-    if pesquisa:
-        tarefas_filtradas = []
-        for tarefa in tarefas:
+            if not pesquisa:
+                tarefas_filtradas.append(tarefa)
 
-            if (
-                pesquisa.lower() in tarefa['titulo'].lower()
-                or
-                pesquisa.lower() in tarefa['disciplina'].lower()
-            ):
+            elif (
+                pesquisa in tarefa['titulo'].lower()
+                or pesquisa in tarefa['disciplina'].lower()
+                ):
                 tarefas_filtradas.append(tarefa)
 
     return render_template('dashboard.html',user=session.get('user'),tarefas=tarefas_filtradas,pesquisa=pesquisa)
@@ -124,9 +120,10 @@ def adicionar_tarefa():
             'titulo': titulo,
             'descricao': descricao,
             'disciplina': disciplina,
-            'data_entrega': data_entrega
+            'data_entrega': data_entrega,
+            'usuario': session['user']['email']
         })
-        flash('Tarefa adicionada com sucesso!')
+        flash('Sua tarefa foi adicionada com sucesso!')
         return redirect(url_for('dashboard'))
 
     return render_template('form_tarefa.html', user=session.get('user'), curso=session.get('user').get('curso'),periodo=session.get('user').get('periodo'))
@@ -134,7 +131,7 @@ def adicionar_tarefa():
 @app.route('/excluir/<int:id>')
 def excluir(id):
 
-    if id < len(tarefas):
+    if id < len(tarefas) and tarefas[id]['usuario'] == session['user']['email']:
         tarefas.pop(id)
         flash('Sua tarefa foi excluída com sucesso!')
     else:
@@ -143,6 +140,9 @@ def excluir(id):
 
 @app.route('/editar/<int:id>', methods=['GET', 'POST'])
 def editar(id):
+    if id >= len(tarefas) or tarefas[id]['usuario'] != session['user']['email']:
+        flash('A tarefa não foi encontrada!')
+        return redirect(url_for('dashboard'))
 
     if request.method == 'POST':
 
