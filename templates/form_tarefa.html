@@ -19,13 +19,13 @@
 
 <form method="POST" action="{% if tarefa %}{{ url_for('editar', id=id) }}{% else %}{{ url_for('adicionar_tarefa') }}{% endif %}">
     <label for="titulo">Título da Tarefa:</label>
-    <input type="text" id="titulo" name="titulo" value="{{ tarefa.titulo if tarefa else '' }}"required>
+    <input type="text" id="titulo" class="input-padrao " name="titulo" value="{{ tarefa.titulo if tarefa else '' }}"required>
 
     <label for="descricao">Descrição:</label>
-    <textarea id="descricao" name="descricao" required>{{ tarefa.descricao if tarefa else '' }}</textarea>
+    <textarea id="descricao" class="input-padrao " name="descricao" required>{{ tarefa.descricao if tarefa else '' }}</textarea>
 
     <label for="disciplina">Disciplina:</label>
-    <select id="disciplina" name="disciplina" required>
+    <select id="disciplina" class="input-padrao " name="disciplina" required>
 
         {% if curso == "informatica" %}
 
@@ -106,20 +106,23 @@
         {% endif %}
 
     </select>
-    <label for="data_entrega">Data de Entrega:</label>
-    <input type="date" id="data_entrega" name="data_entrega" value="{{ tarefa.data_entrega if tarefa else '' }}"required>
-    <br>
-    <button type="submit"  class="bt-tarefa" >
-        {% if tarefa %}
-            Salvar Alterações
-        {% else %}
-            Adicionar Tarefa
-        {% endif %}
-    </button>
 
-    <a href="{{ url_for('dashboard') }}">
-        <button type="button"  class="bt-tarefa" >Cancelar</button>
-    </a>
+    <label for="data_entrega">Data de Entrega:</label>
+    <input type="date" id="data_entrega" class="input-padrao " name="data_entrega" value="{{ tarefa.data_entrega if tarefa else '' }}"required>
+
+    <div id="buttons">
+        <button type="submit"  class="input-verde" >
+            {% if tarefa %}
+                Salvar Alterações
+            {% else %}
+                Adicionar Tarefa
+            {% endif %}
+        </button>
+
+        <a href="{{ url_for('dashboard') }}" >
+            <button type="button" class="input-verde" >Cancelar</button>
+        </a>
+    </div>
 
 </form>
 </div>

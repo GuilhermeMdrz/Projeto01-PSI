@@ -86,7 +86,7 @@ def dashboard():
     tarefas_filtradas = []
      
     for tarefa in tarefas:
-        if tarefa['usuario'] == session['user']['email']:
+          if tarefa['usuario'] == session['user']['email'] and not tarefa.get('concluida', False):
 
             if not pesquisa:
                 tarefas_filtradas.append(tarefa)
@@ -115,14 +115,24 @@ def adicionar_tarefa():
         if not titulo or not descricao:
             flash('Preencha todos os campos da tarefa!')
             return redirect(url_for('adicionar_tarefa'))
-
+        
+        for tarefa in tarefas:
+            if (
+                tarefa['usuario'] == session['user']['email'] and
+                tarefa['titulo'].strip().lower() == titulo.strip().lower()
+            ):
+                flash('Você já tem uma tarefa com esse título!')
+                return redirect(url_for('adicionar_tarefa'))
+       
         tarefas.append({
             'titulo': titulo,
             'descricao': descricao,
             'disciplina': disciplina,
             'data_entrega': data_entrega,
-            'usuario': session['user']['email']
+            'usuario': session['user']['email'],
+            'concluida': False
         })
+        
         flash('Sua tarefa foi adicionada com sucesso!')
         return redirect(url_for('dashboard'))
 
@@ -150,6 +160,7 @@ def editar(id):
         tarefas[id]['descricao'] = request.form.get('descricao')
         tarefas[id]['disciplina'] = request.form.get('disciplina')
         tarefas[id]['data_entrega'] = request.form.get('data_entrega')
+        tarefas[id]['concluida'] = tarefas[id].get('concluida', False)
 
         flash('Sua tarefa foi editada com sucesso!')
         return redirect(url_for('dashboard'))
@@ -163,6 +174,16 @@ def editar(id):
         curso=session.get('user').get('curso'),
         periodo=session.get('user').get('periodo')
     )
+
+@app.route('/concluir/<int:id>')
+def concluir(id):
+    if id < len(tarefas) and tarefas[id]['usuario'] == session['user']['email']:
+        tarefas[id]['concluida'] = True
+        flash('Tarefa marcada como concluída!')
+    else:
+        flash('Erro ao concluir tarefa!')
+
+    return redirect(url_for('dashboard'))
     
 if __name__ == '__main__':
     app.run(debug=True)
