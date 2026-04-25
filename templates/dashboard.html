@@ -8,24 +8,23 @@
 
 {% block content %}
 
-<div class="container">
-    <h1>Minhas Tarefas</h1>
-<p>
-    Sessão iniciada como: <strong>{{ user.nome }}</strong> ({{ user.curso }} - {{ user.periodo }})
-</p>
-<div id="button-tarefa">
-    <a href="{{ url_for('adicionar_tarefa') }}">
-        <button type="button" class="bt-nova-tarefa">Nova Tarefa</button>
-    </a>
-    <form action="{{ url_for('dashboard') }}" method="get" class="form-busca">
-        <input type="text" name="pesquisa" class="input-padrao" placeholder="Pesquisar tarefas..."value="{{ pesquisa }}">
-        <button type="submit"  class="bt-tarefa" >Buscar</button>
-    </form>
+<div id="tarefas">
+    <div class="container">
+        <h1>Minhas Tarefas</h1>
+        <p>
+            Sessão iniciada como: <strong>{{ user.nome }}</strong> ({{ user.curso }} - {{ user.periodo }})
+        </p>
+        <div id="button-tarefa">
+            <a href="{{ url_for('adicionar_tarefa') }}">
+                <button type="button" class="input-verde"> + Nova Tarefa</button>
+            </a>
+            <form action="{{ url_for('dashboard') }}" method="get" class="form-busca">
+                <input type="text" name="pesquisa" class="input-padrao" placeholder="Pesquisar tarefas..."value="{{ pesquisa }}">
+                <button type="submit"  class="bt-tarefa" >Buscar</button>
+            </form>
 
-</div>
-</div>
-
-<div class="container">
+        </div>
+    </div>
    {% if tarefas %}
         {% for tarefa in tarefas %}
             <div class="card">

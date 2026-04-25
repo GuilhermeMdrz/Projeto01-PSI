@@ -2,6 +2,10 @@
 
 {% block title %}Registro - Sistema de Estudos{% endblock %}
 
+{% block css_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/registro.css') }}">
+{% endblock %}
+
 {% block content %}
 <div class="container">
     <h2>Registro</h2>
