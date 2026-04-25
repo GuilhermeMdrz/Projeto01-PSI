@@ -1,0 +1,22 @@
+.container h2 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.container form {
+    display: flex;
+    flex-direction: column;
+}
+
+.container input {
+    margin-bottom: 15px;
+}
+
+.bt-tarefa {
+    width: 100%;
+}
+
+.mensagem {
+    text-align: center;
+    margin-top: 15px;
+}
