@@ -6,7 +6,9 @@ tarefas = []
 usuarios = []
 
 """ 
-Vejam se há algo pendente ainda(jamily)
+FALTA:
+Adequar o sistema para criar as tarefas usando o db.
+Modificar os dados no banco ao editar, excluir ou concluir uma tarefa.
 """
 
 @app.route('/')
