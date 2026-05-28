@@ -40,15 +40,15 @@
                 <div class="acoes">
 
                     {% if not tarefa.concluida %}
-                        <a href="{{ url_for('concluir', id=loop.index0) }}" class="concluir">
+                        <a href="{{ url_for('concluir', id=tarefa['id'])  }}" class="concluir">
                             ○ Marcar como feita
                         </a>
                     {% else %}
                         <span class="concluida">✔ Concluída</span>
                     {% endif %}
 
-                    <a href="{{ url_for('editar', id=loop.index0) }}">Editar</a>
-                    <a href="{{ url_for('excluir', id=loop.index0) }}">Excluir</a>
+                    <a href="{{ url_for('editar', id=tarefa['id']) }}">Editar</a>
+                    <a href="{{ url_for('excluir', id=tarefa['id']) }}">Excluir</a>
 
                 </div>
             </div>

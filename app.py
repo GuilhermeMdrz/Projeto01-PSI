@@ -1,9 +1,10 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
+from db import criar_conexao, inicializar_banco
 
 app = Flask(__name__)
 app.secret_key = 'chave_secreta'
-tarefas = []
-usuarios = []
+
+inicializar_banco()
 
 """ 
 FALTA:
@@ -13,14 +14,14 @@ Modificar os dados no banco ao editar, excluir ou concluir uma tarefa.
 
 @app.route('/')
 def index():
-    if session.get('user'):
+    if session.get('user_id'):
         return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
 
 @app.route('/registro', methods=['GET', 'POST'])
 def registro():
 
-    if session.get('user'):
+    if session.get('user_id'):
         return redirect(url_for('dashboard'))
 
     if request.method == 'POST':
@@ -33,19 +34,21 @@ def registro():
         if not username or not email or not password:
             flash('Preencha todos os campos!')
             return redirect(url_for('registro'))
+        
+        conexao = criar_conexao()
+        usuario_existe = conexao.execute( "SELECT * FROM usuarios WHERE email = ?", (email,) ).fetchone()
 
-        for user in usuarios:
-            if user['email'] == email:
-                flash('Esse email já foi registrado!')
-                return redirect(url_for('registro'))
+        if usuario_existe:
+            conexao.close()
+            flash('Esse email já foi registrado!')
+            return redirect(url_for('registro'))
 
-        usuarios.append({
-            'nome': username,
-            'email': email,
-            'password': password,
-            'curso': curso,
-            'periodo': periodo
-        })
+        conexao.execute("""
+            INSERT INTO usuarios (nome, email, senha, curso, periodo)
+            VALUES (?, ?, ?, ?, ?)
+        """, (username, email, password, curso, periodo))
+        conexao.commit()
+        conexao.close()
 
         flash('Registro foi realizado com sucesso!')
         return redirect(url_for('login'))
@@ -54,18 +57,21 @@ def registro():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
 
-    if session.get('user'):
+    if session.get('user_id'):
         return redirect(url_for('dashboard'))
 
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
 
-        for user in usuarios:  
-            if user['email'] == username and user['password'] == password:
-                session['user'] = user
-                flash('Seu login foi realizado com sucesso!')
-                return redirect(url_for('dashboard'))
+        conexao = criar_conexao()
+        usuario = conexao.execute( "SELECT * FROM usuarios WHERE email = ? AND senha = ?", (username, password) ).fetchone()
+        conexao.close()
+        
+        if usuario:
+            session['user_id'] = usuario['id']
+            flash('Seu login foi realizado com sucesso!')
+            return redirect(url_for('dashboard'))
 
         flash('Email ou senha incorretos!')
         return redirect(url_for('login'))
@@ -74,38 +80,42 @@ def login():
 @app.route('/logout', methods=['POST'])
 def logout():
 
-    session.pop('user', None)
+    session.pop('user_id', None)
     flash('Você saiu do sistema!')
     return redirect(url_for('login'))
 
 @app.route('/dashboard')
 def dashboard():
 
-    if not session.get('user'):
+    if not session.get('user_id'):
         return redirect(url_for('login'))
 
-    pesquisa = request.args.get('pesquisa', '')
-    tarefas_filtradas = []
-     
-    for tarefa in tarefas:
-          if tarefa['usuario'] == session['user']['email'] and not tarefa.get('concluida', False):
+    conexao = criar_conexao()
+    usuario = conexao.execute("SELECT * FROM usuarios WHERE id = ?",(session['user_id'],)).fetchone()
+    pesquisa = request.args.get('pesquisa', '').lower()
 
-            if not pesquisa:
-                tarefas_filtradas.append(tarefa)
+    if pesquisa:
+        tarefas = conexao.execute("""SELECT * FROM tarefas WHERE usuario_id = ? AND concluida = 0 AND (LOWER(titulo) LIKE ?OR LOWER(disciplina) LIKE ?)
+        """,
+        (session['user_id'],f'%{pesquisa}%',f'%{pesquisa}%')).fetchall()
 
-            elif (
-                pesquisa in tarefa['titulo'].lower()
-                or pesquisa in tarefa['disciplina'].lower()
-                ):
-                tarefas_filtradas.append(tarefa)
+    else:
+        tarefas = conexao.execute("""SELECT * FROM tarefas WHERE usuario_id = ? AND concluida = 0
+        """,
+        (session['user_id'],)).fetchall()
 
-    return render_template('dashboard.html',user=session.get('user'),tarefas=tarefas_filtradas,pesquisa=pesquisa)
+    conexao.close()
+
+    return render_template('dashboard.html',user=usuario,tarefas=tarefas,pesquisa=pesquisa)
 
 @app.route('/adicionar_tarefa', methods=['GET', 'POST'])
 def adicionar_tarefa():
 
-    if not session.get('user'):
+    if not session.get('user_id'):
         return redirect(url_for('login'))
+
+    conexao = criar_conexao()
+    usuario = conexao.execute("SELECT * FROM usuarios WHERE id = ?",(session['user_id'],)).fetchone()
 
     if request.method == 'POST':
 
@@ -113,32 +123,34 @@ def adicionar_tarefa():
         descricao = request.form.get('descricao')
         disciplina = request.form.get('disciplina')
         data_entrega = request.form.get('data_entrega')
-        
+
         if not titulo or not descricao:
+            conexao.close()
             flash('Preencha todos os campos da tarefa!')
             return redirect(url_for('adicionar_tarefa'))
-        
-        for tarefa in tarefas:
-            if (
-                tarefa['usuario'] == session['user']['email'] and
-                tarefa['titulo'].strip().lower() == titulo.strip().lower()
-            ):
-                flash('Você já tem uma tarefa com esse título!')
-                return redirect(url_for('adicionar_tarefa'))
-       
-        tarefas.append({
-            'titulo': titulo,
-            'descricao': descricao,
-            'disciplina': disciplina,
-            'data_entrega': data_entrega,
-            'usuario': session['user']['email'],
-            'concluida': False
-        })
-        
+
+        tarefa_existe = conexao.execute("""SELECT * FROM tarefas WHERE usuario_id = ? AND LOWER(titulo) = LOWER(?)
+        """,
+        (session['user_id'], titulo)).fetchone()
+
+        if tarefa_existe:
+            conexao.close()
+            flash('Você já tem uma tarefa com esse título!')
+            return redirect(url_for('adicionar_tarefa'))
+
+        conexao.execute("""INSERT INTO tarefas (titulo, descricao, disciplina, data_entrega, usuario_id)
+            VALUES (?, ?, ?, ?, ?)
+        """,
+        (titulo, descricao, disciplina, data_entrega, session['user_id']))
+
+        conexao.commit()
+        conexao.close()
+
         flash('Sua tarefa foi adicionada com sucesso!')
         return redirect(url_for('dashboard'))
 
-    return render_template('form_tarefa.html', user=session.get('user'), curso=session.get('user').get('curso'),periodo=session.get('user').get('periodo'))
+    conexao.close()
+    return render_template('form_tarefa.html',user=usuario,curso=usuario['curso'],periodo=usuario['periodo'])
 
 @app.route('/excluir/<int:id>')
 def excluir(id):
@@ -173,8 +185,8 @@ def editar(id):
         'form_tarefa.html',
         tarefa=tarefa,
         id=id,
-        curso=session.get('user').get('curso'),
-        periodo=session.get('user').get('periodo')
+        curso=usuario['curso'],
+        periodo=usuario['periodo']
     )
 
 @app.route('/concluir/<int:id>')
