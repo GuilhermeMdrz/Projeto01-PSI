@@ -6,12 +6,6 @@ app.secret_key = 'chave_secreta'
 
 inicializar_banco()
 
-""" 
-FALTA:
-Adequar o sistema para criar as tarefas usando o db.
-Modificar os dados no banco ao editar, excluir ou concluir uma tarefa.
-"""
-
 @app.route('/')
 def index():
     if session.get('user_id'):
@@ -95,14 +89,10 @@ def dashboard():
     pesquisa = request.args.get('pesquisa', '').lower()
 
     if pesquisa:
-        tarefas = conexao.execute("""SELECT * FROM tarefas WHERE usuario_id = ? AND concluida = 0 AND (LOWER(titulo) LIKE ?OR LOWER(disciplina) LIKE ?)
-        """,
-        (session['user_id'],f'%{pesquisa}%',f'%{pesquisa}%')).fetchall()
+        tarefas = conexao.execute("""SELECT * FROM tarefas WHERE usuario_id = ? AND concluida = 0 AND (LOWER(titulo) LIKE ? OR LOWER(disciplina) LIKE ?) """,(session['user_id'],f'%{pesquisa}%',f'%{pesquisa}%')).fetchall()
 
     else:
-        tarefas = conexao.execute("""SELECT * FROM tarefas WHERE usuario_id = ? AND concluida = 0
-        """,
-        (session['user_id'],)).fetchall()
+        tarefas = conexao.execute("""SELECT * FROM tarefas WHERE usuario_id = ? AND concluida = 0 """,(session['user_id'],)).fetchall()
 
     conexao.close()
 
@@ -129,19 +119,16 @@ def adicionar_tarefa():
             flash('Preencha todos os campos da tarefa!')
             return redirect(url_for('adicionar_tarefa'))
 
-        tarefa_existe = conexao.execute("""SELECT * FROM tarefas WHERE usuario_id = ? AND LOWER(titulo) = LOWER(?)
-        """,
-        (session['user_id'], titulo)).fetchone()
+        tarefa_existe = conexao.execute("""SELECT * FROM tarefas WHERE usuario_id = ? AND LOWER(titulo) = LOWER(?) """,(session['user_id'], titulo)).fetchone()
 
         if tarefa_existe:
             conexao.close()
             flash('Você já tem uma tarefa com esse título!')
             return redirect(url_for('adicionar_tarefa'))
 
-        conexao.execute("""INSERT INTO tarefas (titulo, descricao, disciplina, data_entrega, usuario_id)
-            VALUES (?, ?, ?, ?, ?)
-        """,
-        (titulo, descricao, disciplina, data_entrega, session['user_id']))
+        conexao.execute('INSERT INTO tarefas (titulo, descricao, disciplina, data_entrega, concluida, usuario_id) VALUES (?, ?, ?, ?, ?, ?)',
+         (titulo, descricao, disciplina, data_entrega, 0, session['user_id'])
+        )
 
         conexao.commit()
         conexao.close()
@@ -155,47 +142,89 @@ def adicionar_tarefa():
 @app.route('/excluir/<int:id>')
 def excluir(id):
 
-    if id < len(tarefas) and tarefas[id]['usuario'] == session['user']['email']:
-        tarefas.pop(id)
+    if not session.get('user_id'):
+        return redirect(url_for('login'))
+    
+    conexao = criar_conexao()
+
+    tarefa = conexao.execute(''' SELECT * FROM tarefas WHERE id = ? AND usuario_id = ?''',(id, session['user_id'])).fetchone()
+
+    if tarefa:
+        conexao.execute('''DELETE FROM tarefas WHERE id = ? ''',(id,))
+        conexao.commit()
         flash('Sua tarefa foi excluída com sucesso!')
+
     else:
         flash('A tarefa não foi encontrada!')
+
+    conexao.close()
+
     return redirect(url_for('dashboard'))
+
 
 @app.route('/editar/<int:id>', methods=['GET', 'POST'])
 def editar(id):
-    if id >= len(tarefas) or tarefas[id]['usuario'] != session['user']['email']:
+
+    if not session.get('user_id'):
+        return redirect(url_for('login'))
+
+    conexao = criar_conexao()
+
+    usuario = conexao.execute('SELECT * FROM usuarios WHERE id = ?', (session['user_id'],)).fetchone()
+
+    tarefa = conexao.execute('SELECT * FROM tarefas WHERE id = ? AND usuario_id = ?',(id, session['user_id'])).fetchone()
+
+    if not tarefa:
+        conexao.close()
+
         flash('A tarefa não foi encontrada!')
+
         return redirect(url_for('dashboard'))
 
     if request.method == 'POST':
 
-        tarefas[id]['titulo'] = request.form.get('titulo')
-        tarefas[id]['descricao'] = request.form.get('descricao')
-        tarefas[id]['disciplina'] = request.form.get('disciplina')
-        tarefas[id]['data_entrega'] = request.form.get('data_entrega')
-        tarefas[id]['concluida'] = tarefas[id].get('concluida', False)
+        titulo = request.form.get('titulo')
+        descricao = request.form.get('descricao')
+        disciplina = request.form.get('disciplina')
+        data_entrega = request.form.get('data_entrega')
+
+        conexao.execute('UPDATE tarefas SET titulo = ?, descricao = ?, disciplina = ?, data_entrega = ? WHERE id = ?',
+            (titulo, descricao, disciplina, data_entrega, id)
+            )
+
+        conexao.commit()
+        conexao.close()
 
         flash('Sua tarefa foi editada com sucesso!')
+
         return redirect(url_for('dashboard'))
 
-    tarefa = tarefas[id]
+    conexao.close()
 
-    return render_template(
-        'form_tarefa.html',
-        tarefa=tarefa,
-        id=id,
-        curso=usuario['curso'],
-        periodo=usuario['periodo']
-    )
+    return render_template('form_tarefa.html',tarefa=tarefa, id=id, curso=usuario['curso'], periodo=usuario['periodo'])
+
 
 @app.route('/concluir/<int:id>')
 def concluir(id):
-    if id < len(tarefas) and tarefas[id]['usuario'] == session['user']['email']:
-        tarefas[id]['concluida'] = True
+
+    if not session.get('user_id'):
+        return redirect(url_for('login'))
+
+    conexao = criar_conexao()
+
+    tarefa = conexao.execute('SELECT * FROM tarefas WHERE id = ? AND usuario_id = ?',(id, session['user_id'])).fetchone()
+
+    if tarefa:
+        conexao.execute('UPDATE tarefas SET concluida = 1 WHERE id = ?',(id,))
+
+        conexao.commit()
+
         flash('Tarefa marcada como concluída!')
+
     else:
         flash('Erro ao concluir tarefa!')
+
+    conexao.close()
 
     return redirect(url_for('dashboard'))
     
