@@ -8,7 +8,7 @@ Para executar a aplicação é necessário seguir os seguintes passos:
     Abra o terminal e nele execute:
         1° pip install flask
 3 - Crie o ambiente virtual:
-    Também no terminal, execute:
+    Escreva cmd no terminal e depois execute:
         1° python -m venv env
         2° env\Scripts\activate
     O primeiro vai criar e o segundo ativar
