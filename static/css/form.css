@@ -1,0 +1,15 @@
+#buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+#buttons button {
+    flex: 1;
+}
+
+/* botão cancelar */
+#buttons a button {
+    background-color: rgb(226, 223, 223);
+    color: rgb(58, 58, 58);
+}

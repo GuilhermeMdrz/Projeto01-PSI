@@ -18,9 +18,12 @@
 <body>
     <header>
         {% block header %}
-        <img src="" alt="Logo com um livro vermelho sobre um fundo branco" id="logo">
-        <p id="titulo">IFRN Campus Caicó</p>
-        <p id="subtitulo">Sistema de auxílio aos estudos</p>
+        <div id="div_logo"><img src="{{ url_for('static', filename='img/livro.png') }}" alt="Logo com um livro vermelho sobre um fundo branco" id="logo"></div>
+
+        <div id="titulos"> 
+            <p id="titulo">IFRN Campus Caicó</p>
+            <p id="subtitulo">Sistema de auxílio aos estudos</p>
+        </div>
         {% if user %}
         <form method="POST" action="{{ url_for('logout') }}" id="logout-form">
             <button type="submit">Sair</button>
@@ -30,8 +33,16 @@
     </header>
 
     <main>
-        {% block content %}
-        {% endblock %}
+         {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for msg in messages %}
+                <p>{{ msg }}</p>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    {% block content %}
+    {% endblock %}
     </main>
 
     <footer>

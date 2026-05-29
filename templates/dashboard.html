@@ -2,73 +2,65 @@
 
 {% block title %}Dashboard - Sistema de Estudos{% endblock %}
 
-{% block content %}
+{% block css_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
 
+{% block content %}
 <div class="container">
-    <h1>Minhas Tarefas</h1>
-<p>
-    Sessão iniciada como:<strong>{{ user.nome }}</strong> ({{ user.curso }} - {{ user.periodo }})
-</p>
-<div id="button-tarefa">
+    <h2>Minhas Tarefas</h2>
+
+    <p>
+        Sessão iniciada como: <strong>{{ user.nome }}</strong>
+        ({{ user.curso }} - {{ user.periodo }})
+    </p>
+
     <a href="{{ url_for('adicionar_tarefa') }}">
-        <button type="button">Nova Tarefa</button>
+        <button type="button" class="input-verde">+ Nova Tarefa</button>
     </a>
+
     <form action="{{ url_for('dashboard') }}" method="get" class="form-busca">
-        <input
-            type="text"
-            name="pesquisa"
-            placeholder="Pesquisar tarefas..."
-            value="{{ pesquisa }}"
-        >
-        <button type="submit">Buscar</button>
+        <input type="text" name="pesquisa" class="input-padrao" placeholder="Pesquisar tarefas..." value="{{ pesquisa }}">
+        <button type="submit" class="bt-tarefa">Buscar</button>
     </form>
 
+    {% if tarefas %}
+        {% for tarefa in tarefas %}
+            <div class="card">
+                <div class="topo">
+                    <h3>{{ tarefa.titulo }}</h3>
+                    <span class="tag">{{ tarefa.disciplina }}</span>
+                </div>
+
+                <p>{{ tarefa.descricao }}</p>
+                <p class="prazo">Prazo: {{ tarefa.data_entrega }}</p>
+
+                <hr>
+
+                <div class="acoes">
+
+                    {% if not tarefa.concluida %}
+                        <a href="{{ url_for('concluir', id=tarefa['id'])  }}" class="concluir">
+                            ○ Marcar como feita
+                        </a>
+                    {% else %}
+                        <span class="concluida">✔ Concluída</span>
+                    {% endif %}
+
+                    <a href="{{ url_for('editar', id=tarefa['id']) }}">Editar</a>
+                    <a href="{{ url_for('excluir', id=tarefa['id']) }}">Excluir</a>
+
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div id="sem_tarefa">
+            <p>
+                Nenhuma tarefa encontrada. Clique em 
+                <strong>"Nova Tarefa"</strong> para começar a organizar os seus estudos
+            </p>
+        </div>
+    {% endif %}
+
 </div>
-</div>
-
-<div class="container">
-{% if tarefas %}
-    <table border="1" cellpadding="10">
-        <thead>
-            <tr>
-                <th>Título</th>
-                <th>Descrição</th>
-                <th>Disciplina</th>
-                <th>Data de Entrega</th>
-                <th>Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for tarefa in tarefas %}
-            <tr>
-                <td>{{ tarefa.titulo }}</td>
-                <td>{{ tarefa.descricao }}</td>
-                <td>{{ tarefa.disciplina }}</td>
-                <td>{{ tarefa.data_entrega }}</td>
-                <td>
-                    <a href="{{ url_for('editar', id=loop.index0) }}">
-                        <button type="button">
-                            Editar
-                        </button>
-                    </a>
-                    <a href="{{ url_for('excluir', id=loop.index0) }}">
-                        <button type="button">
-                            Excluir
-                        </button>
-                    </a></td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-{% else %}
-
-    <p>Nenhuma tarefa cadastrada.</p>
-
-{% endif %}
-</div>
-<form action="{{ url_for('logout') }}" method="POST">
-    <button type="submit">Logout</button>
-</form>
-
 {% endblock %}
