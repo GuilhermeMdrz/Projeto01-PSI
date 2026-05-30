@@ -30,14 +30,15 @@ def registro():
             return redirect(url_for('registro'))
         
         conexao = criar_conexao()
-        usuario_existe = conexao.execute( "SELECT * FROM usuarios WHERE email = ?", (email,) ).fetchone()
+        cursor = conexao.cursor()
+        usuario_existe = cursor.execute( "SELECT * FROM usuarios WHERE email = ?", (email,) ).fetchone()
 
         if usuario_existe:
             conexao.close()
             flash('Esse email já foi registrado!')
             return redirect(url_for('registro'))
 
-        conexao.execute("""
+        cursor.execute("""
             INSERT INTO usuarios (nome, email, senha, curso, periodo)
             VALUES (?, ?, ?, ?, ?)
         """, (username, email, password, curso, periodo))
@@ -59,7 +60,8 @@ def login():
         password = request.form.get('password')
 
         conexao = criar_conexao()
-        usuario = conexao.execute( "SELECT * FROM usuarios WHERE email = ? AND senha = ?", (username, password) ).fetchone()
+        cursor = conexao.cursor()
+        usuario = cursor.execute( "SELECT * FROM usuarios WHERE email = ? AND senha = ?", (username, password) ).fetchone()
         conexao.close()
         
         if usuario:
@@ -85,14 +87,15 @@ def dashboard():
         return redirect(url_for('login'))
 
     conexao = criar_conexao()
-    usuario = conexao.execute("SELECT * FROM usuarios WHERE id = ?",(session['user_id'],)).fetchone()
+    cursor = conexao.cursor()
+    usuario = cursor.execute("SELECT * FROM usuarios WHERE id = ?",(session['user_id'],)).fetchone()
     pesquisa = request.args.get('pesquisa', '').lower()
 
     if pesquisa:
-        tarefas = conexao.execute("""SELECT * FROM tarefas WHERE usuario_id = ? AND concluida = 0 AND (LOWER(titulo) LIKE ? OR LOWER(disciplina) LIKE ?) """,(session['user_id'],f'%{pesquisa}%',f'%{pesquisa}%')).fetchall()
+        tarefas = cursor.execute("""SELECT * FROM tarefas WHERE usuario_id = ? AND concluida = 0 AND (LOWER(titulo) LIKE ? OR LOWER(disciplina) LIKE ?) """,(session['user_id'],f'%{pesquisa}%',f'%{pesquisa}%')).fetchall()
 
     else:
-        tarefas = conexao.execute("""SELECT * FROM tarefas WHERE usuario_id = ? AND concluida = 0 """,(session['user_id'],)).fetchall()
+        tarefas = cursor.execute("""SELECT * FROM tarefas WHERE usuario_id = ? AND concluida = 0 """,(session['user_id'],)).fetchall()
 
     conexao.close()
 
@@ -105,7 +108,8 @@ def adicionar_tarefa():
         return redirect(url_for('login'))
 
     conexao = criar_conexao()
-    usuario = conexao.execute("SELECT * FROM usuarios WHERE id = ?",(session['user_id'],)).fetchone()
+    cursor = conexao.cursor()
+    usuario = cursor.execute("SELECT * FROM usuarios WHERE id = ?",(session['user_id'],)).fetchone()
 
     if request.method == 'POST':
 
@@ -119,14 +123,14 @@ def adicionar_tarefa():
             flash('Preencha todos os campos da tarefa!')
             return redirect(url_for('adicionar_tarefa'))
 
-        tarefa_existe = conexao.execute("""SELECT * FROM tarefas WHERE usuario_id = ? AND LOWER(titulo) = LOWER(?) """,(session['user_id'], titulo)).fetchone()
+        tarefa_existe = cursor.execute("""SELECT * FROM tarefas WHERE usuario_id = ? AND LOWER(titulo) = LOWER(?) """,(session['user_id'], titulo)).fetchone()
 
         if tarefa_existe:
             conexao.close()
             flash('Você já tem uma tarefa com esse título!')
             return redirect(url_for('adicionar_tarefa'))
 
-        conexao.execute('INSERT INTO tarefas (titulo, descricao, disciplina, data_entrega, concluida, usuario_id) VALUES (?, ?, ?, ?, ?, ?)',
+        cursor.execute('INSERT INTO tarefas (titulo, descricao, disciplina, data_entrega, concluida, usuario_id) VALUES (?, ?, ?, ?, ?, ?)',
          (titulo, descricao, disciplina, data_entrega, 0, session['user_id'])
         )
 
@@ -146,11 +150,12 @@ def excluir(id):
         return redirect(url_for('login'))
     
     conexao = criar_conexao()
+    cursor = conexao.cursor()
 
-    tarefa = conexao.execute(''' SELECT * FROM tarefas WHERE id = ? AND usuario_id = ?''',(id, session['user_id'])).fetchone()
+    tarefa = cursor.execute(''' SELECT * FROM tarefas WHERE id = ? AND usuario_id = ?''',(id, session['user_id'])).fetchone()
 
     if tarefa:
-        conexao.execute('''DELETE FROM tarefas WHERE id = ? ''',(id,))
+        cursor.execute('''DELETE FROM tarefas WHERE id = ? ''',(id,))
         conexao.commit()
         flash('Sua tarefa foi excluída com sucesso!')
 
@@ -169,10 +174,11 @@ def editar(id):
         return redirect(url_for('login'))
 
     conexao = criar_conexao()
+    cursor = conexao.cursor()
 
-    usuario = conexao.execute('SELECT * FROM usuarios WHERE id = ?', (session['user_id'],)).fetchone()
+    usuario = cursor.execute('SELECT * FROM usuarios WHERE id = ?', (session['user_id'],)).fetchone()
 
-    tarefa = conexao.execute('SELECT * FROM tarefas WHERE id = ? AND usuario_id = ?',(id, session['user_id'])).fetchone()
+    tarefa = cursor.execute('SELECT * FROM tarefas WHERE id = ? AND usuario_id = ?',(id, session['user_id'])).fetchone()
 
     if not tarefa:
         conexao.close()
@@ -188,7 +194,7 @@ def editar(id):
         disciplina = request.form.get('disciplina')
         data_entrega = request.form.get('data_entrega')
 
-        conexao.execute('UPDATE tarefas SET titulo = ?, descricao = ?, disciplina = ?, data_entrega = ? WHERE id = ?',
+        cursor.execute('UPDATE tarefas SET titulo = ?, descricao = ?, disciplina = ?, data_entrega = ? WHERE id = ?',
             (titulo, descricao, disciplina, data_entrega, id)
             )
 
@@ -211,11 +217,12 @@ def concluir(id):
         return redirect(url_for('login'))
 
     conexao = criar_conexao()
+    cursor = conexao.cursor()
 
-    tarefa = conexao.execute('SELECT * FROM tarefas WHERE id = ? AND usuario_id = ?',(id, session['user_id'])).fetchone()
+    tarefa = cursor.execute('SELECT * FROM tarefas WHERE id = ? AND usuario_id = ?',(id, session['user_id'])).fetchone()
 
     if tarefa:
-        conexao.execute('UPDATE tarefas SET concluida = 1 WHERE id = ?',(id,))
+        cursor.execute('UPDATE tarefas SET concluida = 1 WHERE id = ?',(id,))
 
         conexao.commit()
 
@@ -227,6 +234,3 @@ def concluir(id):
     conexao.close()
 
     return redirect(url_for('dashboard'))
-    
-if __name__ == '__main__':
-    app.run(debug=True)
