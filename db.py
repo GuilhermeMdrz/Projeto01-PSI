@@ -1,41 +1,40 @@
-import sqlite3
+from flask_sqlalchemy import SQLAlchemy
 
-def criar_conexao():
-    conexao = sqlite3.connect('banco.db')
-    conexao.row_factory = sqlite3.Row
-    return conexao
+db = SQLAlchemy()
 
+class Usuario(db.Model):
+    __tablename__ = "usuarios"
 
-def inicializar_banco():
-    conexao = criar_conexao()
-    cursor = conexao.cursor()
-    cursor.execute("PRAGMA foreign_keys = ON;")
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(100), unique=True, nullable=False)
+    senha = db.Column(db.String(100), nullable=False)
+    curso = db.Column(db.String(100))
+    periodo = db.Column(db.String(50))
+    criado_em = db.Column(db.DateTime, server_default=db.func.now())
 
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS usuarios (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        nome TEXT NOT NULL,
-        email TEXT UNIQUE NOT NULL,
-        senha TEXT NOT NULL,
-        curso TEXT,
-        periodo TEXT,
-        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    tarefas = db.relationship(
+        "Tarefa",
+        back_populates="usuario",
+        cascade="all, delete-orphan"
     )
-""")
 
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS tarefas (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        titulo TEXT NOT NULL,
-        descricao TEXT NOT NULL,
-        disciplina TEXT,
-        data_entrega DATE,
-        concluida INTEGER DEFAULT 0,
-        data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        usuario_id INTEGER NOT NULL,
-        FOREIGN KEY (usuario_id) REFERENCES usuarios(id) 
+
+class Tarefa(db.Model):
+    __tablename__ = "tarefas"
+
+    id = db.Column(db.Integer, primary_key=True)
+    titulo = db.Column(db.String(150), nullable=False)
+    descricao = db.Column(db.Text, nullable=False)
+    disciplina = db.Column(db.String(100))
+    data_entrega = db.Column(db.Date)
+    concluida = db.Column(db.Boolean, default=False)
+    data_criacao = db.Column(db.DateTime, server_default=db.func.now())
+
+    usuario_id = db.Column(
+        db.Integer,
+        db.ForeignKey("usuarios.id"),
+        nullable=False
     )
-""")
 
-    conexao.commit()
-    conexao.close()
+    usuario = db.relationship("Usuario", back_populates="tarefas")
