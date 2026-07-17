@@ -13,31 +13,15 @@ class Usuario(db.Model, UserMixin):
     curso = db.Column(db.String(100))
     periodo = db.Column(db.String(50))
     criado_em = db.Column(db.DateTime, server_default=db.func.now())
-
-    tarefas = db.relationship(
-        "Tarefa",
-        back_populates="usuario",
-        cascade="all, delete-orphan"
-    )
-
-    disciplinas = db.relationship(
-        "Disciplina",
-        back_populates="usuario",
-        cascade="all, delete-orphan"
-    )
+    tarefas = db.relationship("Tarefa",back_populates="usuario",cascade="all, delete-orphan")
+    disciplinas = db.relationship("Disciplina",back_populates="usuario",cascade="all, delete-orphan")
 
 class Disciplina(db.Model):
     __tablename__ = "disciplinas"
 
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False)
-
-    usuario_id = db.Column(
-        db.Integer,
-        db.ForeignKey("usuarios.id"),
-        nullable=False
-    )
-
+    usuario_id = db.Column(db.Integer,db.ForeignKey("usuarios.id"),nullable=False)
     usuario = db.relationship("Usuario", back_populates="disciplinas")
 
 class Tarefa(db.Model):
@@ -51,11 +35,7 @@ class Tarefa(db.Model):
     concluida = db.Column(db.Boolean, default=False)
     data_criacao = db.Column(db.DateTime, server_default=db.func.now())
 
-    usuario_id = db.Column(
-        db.Integer,
-        db.ForeignKey("usuarios.id"),
-        nullable=False
-    )
+    usuario_id = db.Column(db.Integer,db.ForeignKey("usuarios.id"),nullable=False)
 
     usuario = db.relationship("Usuario", back_populates="tarefas")
 

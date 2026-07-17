@@ -1,12 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from datetime import datetime
-from flask_login import (
-    LoginManager,
-    login_user,
-    logout_user,
-    login_required,
-    current_user
-)
+from flask_login import (LoginManager,login_user,logout_user,login_required,current_user)
 from db import db, Usuario, Tarefa, Disciplina
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -57,13 +51,7 @@ def registro():
             flash("Esse email já foi registrado!")
             return redirect(url_for("registro"))
 
-        novo_usuario = Usuario(
-            nome=username,
-            email=email,
-            senha=generate_password_hash(password),
-            curso=curso,
-            periodo=periodo
-        )
+        novo_usuario = Usuario(nome=username,email=email,senha=generate_password_hash(password),curso=curso,periodo=periodo)
         db.session.add(novo_usuario)
         db.session.commit()
 
@@ -81,9 +69,7 @@ def login():
         username = request.form.get('username')
         password = request.form.get('password')
 
-        usuario = Usuario.query.filter_by(
-            email=username
-        ).first()
+        usuario = Usuario.query.filter_by(email=username).first()
 
         if usuario and check_password_hash(usuario.senha, password):
             login_user(usuario)
@@ -92,7 +78,6 @@ def login():
 
         flash('Email ou senha incorretos!')
         return redirect(url_for('login'))
-
     return render_template('login.html')
 
 
@@ -110,7 +95,6 @@ def logout():
 def dashboard():
 
     usuario = current_user
-  
     pesquisa = request.args.get('pesquisa', '').lower()
 
     if pesquisa:
@@ -123,17 +107,8 @@ def dashboard():
             )
         ).all()
     else:
-        tarefas = Tarefa.query.filter_by(
-            usuario_id=current_user.id,
-            concluida=False
-        ).all()
-
-    return render_template(
-        'dashboard.html',
-        user=usuario,
-        tarefas=tarefas,
-        pesquisa=pesquisa
-    )
+        tarefas = Tarefa.query.filter_by(usuario_id=current_user.id,concluida=False).all()
+    return render_template('dashboard.html',user=usuario,tarefas=tarefas,pesquisa=pesquisa)
 
 @app.route('/adicionar_tarefa', methods=['GET', 'POST'])
 @login_required
@@ -142,7 +117,6 @@ def adicionar_tarefa():
     usuario = current_user
 
     if request.method == 'POST':
-
         titulo = request.form.get('titulo')
         descricao = request.form.get('descricao')
         disciplina = request.form.get('disciplina')
@@ -156,57 +130,32 @@ def adicionar_tarefa():
             flash('Preencha todos os campos da tarefa!')
             return redirect(url_for('adicionar_tarefa'))
 
-        tarefa_existe = Tarefa.query.filter(
-            Tarefa.usuario_id == current_user.id,
-            Tarefa.titulo.ilike(titulo)
-        ).first()
+        tarefa_existe = Tarefa.query.filter(Tarefa.usuario_id == current_user.id,Tarefa.titulo.ilike(titulo)).first()
 
         if tarefa_existe:
             flash('Você já tem uma tarefa com esse título!')
             return redirect(url_for('adicionar_tarefa'))
         
-        disciplina_existe = Disciplina.query.filter_by(
-            nome=disciplina,
-            usuario_id=current_user.id
-        ).first()
+        disciplina_existe = Disciplina.query.filter_by(nome=disciplina,usuario_id=current_user.id).first()
 
         if not disciplina_existe:
-            nova_disciplina = Disciplina(
-                nome=disciplina,
-                usuario_id=current_user.id
-            )
+            nova_disciplina = Disciplina(nome=disciplina,usuario_id=current_user.id)
             db.session.add(nova_disciplina)
 
-        nova_tarefa = Tarefa(
-            titulo=titulo,
-            descricao=descricao,
-            disciplina=disciplina,
-            data_entrega=data_entrega,
-            concluida=False,
-            usuario_id=current_user.id
-        )
+        nova_tarefa = Tarefa(titulo=titulo,descricao=descricao,disciplina=disciplina,data_entrega=data_entrega,concluida=False,usuario_id=current_user.id)
 
         db.session.add(nova_tarefa)
         db.session.commit()
 
         flash('Sua tarefa foi adicionada com sucesso!')
         return redirect(url_for('dashboard'))
-
-    return render_template(
-        'form_tarefa.html',
-        user=usuario,
-        curso=usuario.curso,
-        periodo=usuario.periodo
-    )
+    return render_template('form_tarefa.html',user=usuario,curso=usuario.curso,periodo=usuario.periodo)
 
 @app.route('/excluir/<int:id>')
 @login_required
 def excluir(id):
 
-    tarefa = Tarefa.query.filter_by(
-        id=id,
-        usuario_id=current_user.id
-    ).first()
+    tarefa = Tarefa.query.filter_by(id=id,usuario_id=current_user.id).first()
 
     if tarefa:
         db.session.delete(tarefa)
@@ -214,7 +163,6 @@ def excluir(id):
         flash('Sua tarefa foi excluída com sucesso!')
     else:
         flash('A tarefa não foi encontrada!')
-
     return redirect(url_for('dashboard'))
 
 
@@ -223,18 +171,13 @@ def excluir(id):
 def editar(id):
 
     usuario = current_user
-
-    tarefa = Tarefa.query.filter_by(
-        id=id,
-        usuario_id=current_user.id
-    ).first()
+    tarefa = Tarefa.query.filter_by(id=id,usuario_id=current_user.id).first()
 
     if not tarefa:
         flash('A tarefa não foi encontrada!')
         return redirect(url_for('dashboard'))
 
     if request.method == 'POST':
-
         tarefa.titulo = request.form.get('titulo')
         tarefa.descricao = request.form.get('descricao')
         tarefa.disciplina = request.form.get('disciplina')
@@ -245,29 +188,18 @@ def editar(id):
         else:
             tarefa.data_entrega = None
             
-
         db.session.commit()
 
         flash('Sua tarefa foi editada com sucesso!')
         return redirect(url_for('dashboard'))
-
-    return render_template(
-        'form_tarefa.html',
-        tarefa=tarefa,
-        id=id,
-        curso=usuario.curso,
-        periodo=usuario.periodo
-    )
+    return render_template('form_tarefa.html',tarefa=tarefa,id=id,curso=usuario.curso,periodo=usuario.periodo)
 
 
 @app.route('/concluir/<int:id>')
 @login_required
 def concluir(id):
 
-    tarefa = Tarefa.query.filter_by(
-        id=id,
-        usuario_id=current_user.id
-    ).first()
+    tarefa = Tarefa.query.filter_by(id=id,usuario_id=current_user.id).first()
 
     if tarefa:
         tarefa.concluida = True
@@ -275,7 +207,6 @@ def concluir(id):
         flash('Tarefa marcada como concluída!')
     else:
         flash('Erro ao concluir tarefa!')
-
     return redirect(url_for('dashboard'))
     
 if __name__ == '__main__':
