@@ -1,6 +1,14 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
-from flask_login import LoginManager
+from flask import Flask, render_template, request, redirect, url_for, flash
+from datetime import datetime
+from flask_login import (
+    LoginManager,
+    login_user,
+    logout_user,
+    login_required,
+    current_user
+)
 from db import db, Usuario, Tarefa
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.secret_key = 'chave_secreta'
@@ -22,14 +30,14 @@ def load_user(user_id):
 
 @app.route('/')
 def index():
-    if session.get('user_id'):
+    if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
 
 @app.route('/registro', methods=['GET', 'POST'])
 def registro():
 
-    if session.get('user_id'):
+    if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
 
     if request.method == 'POST':
@@ -52,21 +60,21 @@ def registro():
         novo_usuario = Usuario(
             nome=username,
             email=email,
-            senha=password,
+            senha=generate_password_hash(password),
             curso=curso,
             periodo=periodo
         )
-
         db.session.add(novo_usuario)
         db.session.commit()
 
         flash("Registro realizado com sucesso!")
         return redirect(url_for("login"))
+    return render_template("registro.html")
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
 
-    if session.get('user_id'):
+    if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
 
     if request.method == 'POST':
@@ -74,12 +82,11 @@ def login():
         password = request.form.get('password')
 
         usuario = Usuario.query.filter_by(
-            email=username,
-            senha=password
+            email=username
         ).first()
 
-        if usuario:
-            session['user_id'] = usuario.id
+        if usuario and check_password_hash(usuario.senha, password):
+            login_user(usuario)
             flash('Seu login foi realizado com sucesso!')
             return redirect(url_for('dashboard'))
 
@@ -90,26 +97,25 @@ def login():
 
 
 @app.route('/logout', methods=['POST'])
+@login_required
 def logout():
 
-    session.pop('user_id', None)
+    logout_user()
     flash('Você saiu do sistema!')
     return redirect(url_for('login'))
 
 
 @app.route('/dashboard')
+@login_required
 def dashboard():
 
-    if not session.get('user_id'):
-        return redirect(url_for('login'))
-
-    usuario = Usuario.query.get(session['user_id'])
-
+    usuario = current_user
+  
     pesquisa = request.args.get('pesquisa', '').lower()
 
     if pesquisa:
         tarefas = Tarefa.query.filter(
-            Tarefa.usuario_id == session['user_id'],
+            Tarefa.usuario_id == current_user.id,
             Tarefa.concluida == False,
             (
                 Tarefa.titulo.ilike(f'%{pesquisa}%') |
@@ -118,7 +124,7 @@ def dashboard():
         ).all()
     else:
         tarefas = Tarefa.query.filter_by(
-            usuario_id=session['user_id'],
+            usuario_id=current_user.id,
             concluida=False
         ).all()
 
@@ -130,12 +136,10 @@ def dashboard():
     )
 
 @app.route('/adicionar_tarefa', methods=['GET', 'POST'])
+@login_required
 def adicionar_tarefa():
 
-    if not session.get('user_id'):
-        return redirect(url_for('login'))
-
-    usuario = Usuario.query.get(session['user_id'])
+    usuario = current_user
 
     if request.method == 'POST':
 
@@ -144,12 +148,15 @@ def adicionar_tarefa():
         disciplina = request.form.get('disciplina')
         data_entrega = request.form.get('data_entrega')
 
+        if data_entrega:
+            data_entrega = datetime.strptime(data_entrega, "%Y-%m-%d").date()
+
         if not titulo or not descricao:
             flash('Preencha todos os campos da tarefa!')
             return redirect(url_for('adicionar_tarefa'))
 
         tarefa_existe = Tarefa.query.filter(
-            Tarefa.usuario_id == session['user_id'],
+            Tarefa.usuario_id == current_user.id,
             Tarefa.titulo.ilike(titulo)
         ).first()
 
@@ -161,9 +168,9 @@ def adicionar_tarefa():
             titulo=titulo,
             descricao=descricao,
             disciplina=disciplina,
-            data_entrega=data_entrega if data_entrega else None,
+            data_entrega=data_entrega,
             concluida=False,
-            usuario_id=session['user_id']
+            usuario_id=current_user.id
         )
 
         db.session.add(nova_tarefa)
@@ -180,14 +187,12 @@ def adicionar_tarefa():
     )
 
 @app.route('/excluir/<int:id>')
+@login_required
 def excluir(id):
-
-    if not session.get('user_id'):
-        return redirect(url_for('login'))
 
     tarefa = Tarefa.query.filter_by(
         id=id,
-        usuario_id=session['user_id']
+        usuario_id=current_user.id
     ).first()
 
     if tarefa:
@@ -201,16 +206,14 @@ def excluir(id):
 
 
 @app.route('/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
 def editar(id):
 
-    if not session.get('user_id'):
-        return redirect(url_for('login'))
-
-    usuario = Usuario.query.get(session['user_id'])
+    usuario = current_user
 
     tarefa = Tarefa.query.filter_by(
         id=id,
-        usuario_id=session['user_id']
+        usuario_id=current_user.id
     ).first()
 
     if not tarefa:
@@ -222,9 +225,13 @@ def editar(id):
         tarefa.titulo = request.form.get('titulo')
         tarefa.descricao = request.form.get('descricao')
         tarefa.disciplina = request.form.get('disciplina')
-
         data_entrega = request.form.get('data_entrega')
-        tarefa.data_entrega = data_entrega if data_entrega else None
+
+        if data_entrega:
+            tarefa.data_entrega = datetime.strptime(data_entrega, "%Y-%m-%d").date()
+        else:
+            tarefa.data_entrega = None
+            
 
         db.session.commit()
 
@@ -241,14 +248,12 @@ def editar(id):
 
 
 @app.route('/concluir/<int:id>')
+@login_required
 def concluir(id):
-
-    if not session.get('user_id'):
-        return redirect(url_for('login'))
 
     tarefa = Tarefa.query.filter_by(
         id=id,
-        usuario_id=session['user_id']
+        usuario_id=current_user.id
     ).first()
 
     if tarefa:

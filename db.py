@@ -20,6 +20,25 @@ class Usuario(db.Model, UserMixin):
         cascade="all, delete-orphan"
     )
 
+    disciplinas = db.relationship(
+        "Disciplina",
+        back_populates="usuario",
+        cascade="all, delete-orphan"
+    )
+
+class Disciplina(db.Model):
+    __tablename__ = "disciplinas"
+
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(100), nullable=False)
+
+    usuario_id = db.Column(
+        db.Integer,
+        db.ForeignKey("usuarios.id"),
+        nullable=False
+    )
+
+    usuario = db.relationship("Usuario", back_populates="disciplinas")
 
 class Tarefa(db.Model):
     __tablename__ = "tarefas"
@@ -39,3 +58,4 @@ class Tarefa(db.Model):
     )
 
     usuario = db.relationship("Usuario", back_populates="tarefas")
+
