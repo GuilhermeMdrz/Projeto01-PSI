@@ -146,6 +146,7 @@ def adicionar_tarefa():
         titulo = request.form.get('titulo')
         descricao = request.form.get('descricao')
         disciplina = request.form.get('disciplina')
+        print("Disciplina recebida:", disciplina)
         data_entrega = request.form.get('data_entrega')
 
         if data_entrega:
@@ -163,6 +164,18 @@ def adicionar_tarefa():
         if tarefa_existe:
             flash('Você já tem uma tarefa com esse título!')
             return redirect(url_for('adicionar_tarefa'))
+        
+        disciplina_existe = Disciplina.query.filter_by(
+            nome=disciplina,
+            usuario_id=current_user.id
+        ).first()
+
+        if not disciplina_existe:
+            nova_disciplina = Disciplina(
+                nome=disciplina,
+                usuario_id=current_user.id
+            )
+            db.session.add(nova_disciplina)
 
         nova_tarefa = Tarefa(
             titulo=titulo,
