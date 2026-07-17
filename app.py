@@ -7,7 +7,7 @@ from flask_login import (
     login_required,
     current_user
 )
-from db import db, Usuario, Tarefa
+from db import db, Usuario, Tarefa, Disciplina
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
@@ -26,7 +26,7 @@ with app.app_context():
 
 @login_manager.user_loader
 def load_user(user_id):
-    return Usuario.query.get(int(user_id))
+    return db.session.get(Usuario, int(user_id))
 
 @app.route('/')
 def index():
